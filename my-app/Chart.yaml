@@ -3,8 +3,8 @@ name: my-app
 version: 1.1.0
 dependencies:
   - name: postgresql
-    version: 16.7.27
+    version: 16.7.24
     repository: https://charts.bitnami.com/bitnami
   - name: redis
-    version: 22.0.7
+    version: 22.0.5
     repository: https://charts.bitnami.com/bitnami
