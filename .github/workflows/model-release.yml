@@ -6,7 +6,7 @@ concurrency:  #avoid concurrent runs on label events, might cause issues on supe
 on:
   pull_request:
     branches:
-      - master
+      - main
     types: [opened, synchronize, reopened, labeled, unlabeled]
   pull_request_target:
     types: [closed]
