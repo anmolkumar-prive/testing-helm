@@ -137,7 +137,7 @@ jobs:
       - uses: "cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a" # v1.0.0
         id: read
         with:
-          matrix-step-name: decide-tags-${{ matrix.module_name }}
+          matrix-step-name: decide-tags
 
       - name: 'Prepare PR comments'
         id: comment_on_pr
@@ -145,21 +145,23 @@ jobs:
           list_of_modules=$(echo '${{ steps.read.outputs.result }}' | jq '.new_tag | keys[]' )
           previous_tags=$(echo '${{ steps.read.outputs.result }}' | jq '.previous_tag' )
           new_tags=$(echo '${{ steps.read.outputs.result }}' | jq '.new_tag')
-          
+
           echo "# Release plan" >> prepare_comment.txt
           echo "| Module | Previous version | New version |" >> prepare_comment.txt
           echo "|--|--|--|" >> prepare_comment.txt
-          
+
           declare -a array
           for module in $list_of_modules;
           do
             echo "| $module | $(echo $previous_tags | jq -r '.'$module) | $(echo $new_tags | jq -r '.'$module) |" >> prepare_comment.txt
-          done          
+          done
 
       - name: Comment PR
         uses: "thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b" # v3.0.0
         with:
           file-path: prepare_comment.txt
+          comment-tag: version_tag
+          mode: recreate
 
   create-tag:
     needs:
