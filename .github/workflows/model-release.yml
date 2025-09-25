@@ -121,7 +121,7 @@ jobs:
       - uses: "cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375" # v1.0.0
         id: out
         with:
-          matrix-step-name: ${{ github.job }}
+          matrix-step-name: ${{ github.job }}-${{ matrix.module_name }}
           matrix-key: ${{ matrix.module_name }}
           outputs: |-
               previous_tag: ${{ steps.previoustag-withoutprefix.outputs.tag }}
@@ -137,7 +137,7 @@ jobs:
       - uses: "cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a" # v1.0.0
         id: read
         with:
-          matrix-step-name: decide-tags
+          matrix-step-name: decide-tags-${{ matrix.module_name }}
 
       - name: 'Prepare PR comments'
         id: comment_on_pr
