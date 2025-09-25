@@ -110,7 +110,7 @@ jobs:
         run: |
           # Removing moduleName from the complete tag i.e acm-v1.2.3 => v1.2.3
           withoutTag=$(echo ${{ steps.previoustag.outputs.tag }} | sed -e "s/^${{ matrix.module_name }}-//")
-          
+
           # Storing variable in Step Output
           echo "tag=$withoutTag" >> $GITHUB_OUTPUT
 
@@ -128,6 +128,7 @@ jobs:
           outputs: |-
               previous_tag: ${{ steps.previoustag-withoutprefix.outputs.tag }}
               new_tag: ${{ steps.next-semver.outputs[format('v_{0}', needs.detect.outputs.release-type )] }}
+              
   comment:
     needs:
       - decide-tags
