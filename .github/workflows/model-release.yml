@@ -71,14 +71,14 @@ jobs:
         run: |
           list_changed_directories=$(git diff --diff-filter=d --name-only HEAD^ HEAD ':(exclude)*README.md' | xargs -L1 dirname | uniq | grep -Ev "^\." | sed -e 's/\/templates//;s/\/user-data//;s/\/policies//' | uniq || [[ $? == 1 ]] )
           echo $list_changed_directories
-          
+
           declare -a matrix
           for changed_directory in $list_changed_directories;
           do
             module_name=$(echo $changed_directory | sed -e "s/\//_/g")
             matrix+="{\"module_name\": \"$module_name\", \"module_path\": \"$changed_directory\"},"
           done
-          echo "matrix={\"include\":[$matrix]}" >> $GITHUB_OUTPUT 
+          echo "matrix={\"include\":[$matrix]}" >> $GITHUB_OUTPUT
           echo $matrix
 
   decide-tags:
