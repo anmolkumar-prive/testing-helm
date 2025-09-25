@@ -71,14 +71,14 @@ jobs:
         run: |
           list_changed_directories=$(git diff --diff-filter=d --name-only HEAD^ HEAD ':(exclude)*README.md' | xargs -L1 dirname | uniq | grep -Ev "^\." | sed -e 's/\/templates//;s/\/user-data//;s/\/policies//' | uniq || [[ $? == 1 ]] )
           echo $list_changed_directories
-
+          
           declare -a matrix
           for changed_directory in $list_changed_directories;
           do
             module_name=$(echo $changed_directory | sed -e "s/\//_/g")
             matrix+="{\"module_name\": \"$module_name\", \"module_path\": \"$changed_directory\"},"
           done
-          echo "matrix={\"include\":[$matrix]}" >> $GITHUB_OUTPUT
+          echo "matrix={\"include\":[$matrix]}" >> $GITHUB_OUTPUT 
           echo $matrix
 
   decide-tags:
@@ -121,7 +121,7 @@ jobs:
       - uses: "cloudposse/github-action-matrix-outputs-write@ed06cf3a6bf23b8dce36d1cf0d63123885bb8375" # v1.0.0
         id: out
         with:
-          matrix-step-name: ${{ github.job }}-${{ matrix.module_name }}
+          matrix-step-name: ${{ github.job }}
           matrix-key: ${{ matrix.module_name }}
           outputs: |-
               previous_tag: ${{ steps.previoustag-withoutprefix.outputs.tag }}
@@ -145,23 +145,21 @@ jobs:
           list_of_modules=$(echo '${{ steps.read.outputs.result }}' | jq '.new_tag | keys[]' )
           previous_tags=$(echo '${{ steps.read.outputs.result }}' | jq '.previous_tag' )
           new_tags=$(echo '${{ steps.read.outputs.result }}' | jq '.new_tag')
-
+          
           echo "# Release plan" >> prepare_comment.txt
           echo "| Module | Previous version | New version |" >> prepare_comment.txt
           echo "|--|--|--|" >> prepare_comment.txt
-
+          
           declare -a array
           for module in $list_of_modules;
           do
             echo "| $module | $(echo $previous_tags | jq -r '.'$module) | $(echo $new_tags | jq -r '.'$module) |" >> prepare_comment.txt
-          done
+          done          
 
       - name: Comment PR
         uses: "thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b" # v3.0.0
         with:
           file-path: prepare_comment.txt
-          comment-tag: version_tag
-          mode: recreate
 
   create-tag:
     needs:
