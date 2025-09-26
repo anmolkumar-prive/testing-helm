@@ -202,4 +202,4 @@ jobs:
           
           # Crete New Tag for Module
           git tag -a "${{ matrix.module_name }}-${{ fromJson(steps.read.outputs.result).new_tag[format('{0}', matrix.module_name )] }}" -m "Version ${{ fromJson(steps.read.outputs.result).new_tag[format('{0}', matrix.module_name )] }}" "${{ steps.moduleSha.outputs.sha }}"
-          
+          git push origin ${{ matrix.module_name }}-${{ fromJson(steps.read.outputs.result).new_tag[format('{0}', matrix.module_name )] }}
