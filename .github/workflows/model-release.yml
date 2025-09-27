@@ -227,10 +227,9 @@ jobs:
       - name: Package Helm Chart (Preview)
         run: |
           echo "📦 Preview packaging Helm chart for module: ${{ matrix.module_name }}"
-          cd ${{ matrix.module_path }}
-          mkdir -p ../../preview-packages
-          helm package . --destination ../../preview-packages
-          helm repo index ../../preview-packages
+          mkdir -p preview-packages
+          helm package ${{ matrix.module_path }} --destination preview-packages
+          helm repo index preview-packages
 
       - name: Upload Preview Artifacts
         uses: actions/upload-artifact@v4
