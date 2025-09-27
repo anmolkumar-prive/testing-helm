@@ -2,7 +2,21 @@ apiVersion: v1
 entries:
   myapp:
   - apiVersion: v2
-    created: "2025-09-27T10:36:37.05991964Z"
+    created: "2025-09-27T11:29:12.748968544Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: c53d3875056a2a6bea3ed88b5f41e1bbd2c7aaf9698263ce6f52382612a9b308
+    name: myapp
+    urls:
+    - myapp-2.1.1.tgz
+    version: 2.1.1
+  - apiVersion: v2
+    created: "2025-09-27T11:29:12.736265329Z"
     dependencies:
     - name: postgresql
       repository: https://charts.bitnami.com/bitnami
@@ -16,7 +30,7 @@ entries:
     - myapp-1.2.1.tgz
     version: 1.2.1
   - apiVersion: v2
-    created: "2025-09-27T10:36:37.048138438Z"
+    created: "2025-09-27T11:29:12.724632572Z"
     dependencies:
     - name: postgresql
       repository: https://charts.bitnami.com/bitnami
@@ -29,4 +43,4 @@ entries:
     urls:
     - myapp-1.1.1.tgz
     version: 1.1.1
-generated: "2025-09-27T10:36:37.036127781Z"
+generated: "2025-09-27T11:29:12.712583985Z"
