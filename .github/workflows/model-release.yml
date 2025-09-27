@@ -203,3 +203,80 @@ jobs:
           # Crete New Tag for Module
           git tag -a "${{ matrix.module_name }}-${{ fromJson(steps.read.outputs.result).new_tag[format('{0}', matrix.module_name )] }}" -m "Version ${{ fromJson(steps.read.outputs.result).new_tag[format('{0}', matrix.module_name )] }}" "${{ steps.moduleSha.outputs.sha }}"
           git push origin ${{ matrix.module_name }}-${{ fromJson(steps.read.outputs.result).new_tag[format('{0}', matrix.module_name )] }}
+  
+  preview-helm-charts:
+    needs:
+      - generate-matrix
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    if: ${{ (fromJson(needs.generate-matrix.outputs.matrix).include[0]) && (needs.detect.outputs.is-merge-event == 'false') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Package Helm Chart (Preview)
+        run: |
+          echo "📦 Preview packaging Helm chart for module: ${{ matrix.module_name }}"
+          cd ${{ matrix.module_path }}
+          mkdir -p ../../preview-packages
+          helm package . --destination ../../preview-packages
+          helm repo index ../../preview-packages
+
+      - name: Upload Preview Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-preview-${{ matrix.module_name }}
+          path: preview-packages/*
+
+  # 🚀 PUBLISH: only run after merge to main
+  package-helm-charts:
+    needs:
+      - create-tag
+      - generate-matrix
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    if: ${{ (fromJson(needs.generate-matrix.outputs.matrix).include[0]) && (needs.detect.outputs.is-merge-event == 'true') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Package Helm Chart (Publish)
+        run: |
+          echo "📦 Publishing Helm chart for module: ${{ matrix.module_name }}"
+          cd ${{ matrix.module_path }}
+          helm package . --destination ../packages
+          helm repo index ../packages --merge ../packages/index.yaml
+
+      - name: Commit and push updated Helm packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd packages
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add .
+            git commit -m "chore(ci): update Helm chart package for ${{ matrix.module_name }}"
+            git push
+          else
+            echo "✅ No changes to commit in packages/"
+          fi
