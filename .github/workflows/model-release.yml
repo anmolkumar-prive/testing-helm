@@ -211,7 +211,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-    if: ${{ (fromJson(needs.generate-matrix.outputs.matrix).include[0]) && (needs.detect.outputs.is-merge-event == 'false') }}
+    # ✅ Only run on pull_request (not on merge event)
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -246,7 +247,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-    if: ${{ (fromJson(needs.generate-matrix.outputs.matrix).include[0]) && (needs.detect.outputs.is-merge-event == 'true') }}
+    if: github.event_name == 'pull_request_target' && needs.detect.outputs.is-merge-event == 'true'    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
