@@ -231,12 +231,6 @@ jobs:
           helm package ${{ matrix.module_path }} --destination preview-packages
           helm repo index preview-packages
 
-      - name: Upload Preview Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: helm-preview-${{ matrix.module_name }}
-          path: preview-packages/*
-
   # 🚀 PUBLISH: only run after merge to main
   package-helm-charts:
     needs:
