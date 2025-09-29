@@ -254,7 +254,7 @@ jobs:
 
       - name: Package Helm Chart (Publish)
         run: |
-          echo "📦 Publishing Helm chart for module: ${{ matrix.module_name }}"
+          echo " Helm chart for module: ${{ matrix.module_name }}"
           cd ${{ matrix.module_path }}
           helm package . --destination ../packages
           helm repo index ../packages --merge ../packages/index.yaml
