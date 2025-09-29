@@ -211,7 +211,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-    # ✅ Only run on pull_request (not on merge event)
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
@@ -226,12 +225,11 @@ jobs:
 
       - name: Package Helm Chart (Preview)
         run: |
-          echo "📦 Preview packaging Helm chart for module: ${{ matrix.module_name }}"
+          echo "Preview packaging Helm chart for module: ${{ matrix.module_name }}"
           mkdir -p preview-packages
           helm package ${{ matrix.module_path }} --destination preview-packages
           helm repo index preview-packages
 
-  # 🚀 PUBLISH: only run after merge to main
   package-helm-charts:
     needs:
       - create-tag
@@ -272,5 +270,5 @@ jobs:
             git commit -m "chore(ci): update Helm chart package for ${{ matrix.module_name }}"
             git push
           else
-            echo "✅ No changes to commit in packages/"
+            echo "No changes to commit in packages/"
           fi
