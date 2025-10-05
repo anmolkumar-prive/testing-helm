@@ -57,33 +57,23 @@ jobs:
       matrix: ${{ steps.changed-directories.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
         with:
           fetch-depth: 0
-
       - name: Get list of changed directories
         id: changed-directories
         run: |
-          # Get changed directories, exclude packages and other irrelevant folders
-          list_changed_directories=$(git diff --diff-filter=d --name-only HEAD^ HEAD \
-            ':(exclude)*README.md' \
-            | xargs -L1 dirname \
-            | uniq \
-            | grep -Ev "^\.(|/)|^packages" \
-            | sed -e 's/\/templates//;s/\/user-data//;s/\/policies//' \
-            | uniq || [[ $? == 1 ]] )
-
-          echo "Changed directories: $list_changed_directories"
+          list_changed_directories=$(git diff --diff-filter=d --name-only HEAD^ HEAD ':(exclude)*README.md' | xargs -L1 dirname | uniq | grep -Ev "^\." | sed -e 's/\/templates//;s/\/user-data//;s/\/policies//' | uniq || [[ $? == 1 ]] )
+          echo $list_changed_directories
 
           declare -a matrix
-          for changed_directory in $list_changed_directories; do
+          for changed_directory in $list_changed_directories;
+          do
             module_name=$(echo $changed_directory | sed -e "s/\//_/g")
             matrix+="{\"module_name\": \"$module_name\", \"module_path\": \"$changed_directory\"},"
           done
-
-          # Output matrix to workflow
           echo "matrix={\"include\":[$matrix]}" >> $GITHUB_OUTPUT
-          echo "Matrix: $matrix"
+          echo $matrix
 
   setup:
     runs-on: ubuntu-22.04
