@@ -1,0 +1,127 @@
+apiVersion: v1
+entries:
+  apache:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2025-10-05T12:16:02.963884639Z"
+    description: A Helm chart for Kubernetes
+    digest: ee6199a6e9630f5800633e79d05b6b754e9a04bd88054206dce8f90bda3f0112
+    name: apache
+    type: application
+    urls:
+    - apache-1.2.1.tgz
+    version: 1.2.1
+  myapp:
+  - apiVersion: v2
+    created: "2025-10-05T12:16:03.061572684Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: 3b1a2320f3b02c19feed040dca5a89b5c64a6066e92870e6ee18031811a52d3d
+    name: myapp
+    urls:
+    - myapp-4.7.0.tgz
+    version: 4.7.0
+  - apiVersion: v2
+    created: "2025-10-05T12:16:03.048788852Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: fbf7a88774755fd56ef4f17d76e874c0bb5bb6f61196895a9548983c82c984ac
+    name: myapp
+    urls:
+    - myapp-4.6.0.tgz
+    version: 4.6.0
+  - apiVersion: v2
+    created: "2025-10-05T12:16:03.036330466Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: 284f22d1fae127958f2b064c1578b848fd296f3dccfbaab03b01e357dfa04420
+    name: myapp
+    urls:
+    - myapp-4.5.6.tgz
+    version: 4.5.6
+  - apiVersion: v2
+    created: "2025-10-05T12:16:03.025959583Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: cce4d20d8873f348dbfb755500c6954d4d36279cc89e795c926ebab0dad40303
+    name: myapp
+    urls:
+    - myapp-4.5.0.tgz
+    version: 4.5.0
+  - apiVersion: v2
+    created: "2025-10-05T12:16:03.014086065Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: c53d3875056a2a6bea3ed88b5f41e1bbd2c7aaf9698263ce6f52382612a9b308
+    name: myapp
+    urls:
+    - myapp-2.1.1.tgz
+    version: 2.1.1
+  - apiVersion: v2
+    created: "2025-10-05T12:16:03.001970086Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: a2d3cb33a3063ba1754bd66e0a9e1b26ee8e18d87df80ee3476dccfd84bfcb3b
+    name: myapp
+    urls:
+    - myapp-1.2.1.tgz
+    version: 1.2.1
+  - apiVersion: v2
+    created: "2025-10-05T12:16:02.989917023Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: 8e18be35641d62bda03ed916e4db07952b345d82f2e405c3de6ed043e8719db3
+    name: myapp
+    urls:
+    - myapp-1.1.1.tgz
+    version: 1.1.1
+  - apiVersion: v2
+    created: "2025-10-05T12:16:02.975887287Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: 467463ca0baaffdf5610a34425e783364385d827dff62ec8f7d0677142706012
+    name: myapp
+    urls:
+    - myapp-1.0.0.tgz
+    version: 1.0.0
+generated: "2025-10-05T12:16:02.963325108Z"
