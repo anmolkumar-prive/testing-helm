@@ -63,7 +63,7 @@ jobs:
       - name: Get list of changed directories
         id: changed-directories
         run: |
-          list_changed_directories=$(git diff --diff-filter=d --name-only HEAD^ HEAD ':(exclude)*README.md' | xargs -L1 dirname | uniq | grep -Ev "^\." | sed -e 's/\/templates//;s/\/user-data//;s/\/policies//' | uniq || [[ $? == 1 ]] )
+          list_changed_directories=$(git diff --diff-filter=d --name-only HEAD^ HEAD ':(exclude)*README.md' | xargs -L1 dirname | uniq | grep -Ev "^\.(|/)|^packages" | grep -Ev "^\." | sed -e 's/\/templates//;s/\/user-data//;s/\/policies//' | uniq || [[ $? == 1 ]] )
           echo $list_changed_directories
 
           declare -a matrix
