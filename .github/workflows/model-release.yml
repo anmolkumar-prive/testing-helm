@@ -1,5 +1,5 @@
-name: Module Versioning
-concurrency:  #avoid concurrent runs on label events, might cause issues on super fast commits  ¯\_(ツ)_/¯
+name: Release Helm chart
+concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
@@ -57,23 +57,28 @@ jobs:
       matrix: ${{ steps.changed-directories.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - name: Get list of changed directories
+      - name: Get list of changed directories with Chart.yaml
         id: changed-directories
         run: |
-          list_changed_directories=$(git diff --diff-filter=d --name-only HEAD^ HEAD ':(exclude)*README.md' | xargs -L1 dirname | uniq | grep -Ev "^\." | sed -e 's/\/templates//;s/\/user-data//;s/\/policies//' | uniq || [[ $? == 1 ]] )
-          echo $list_changed_directories
-
+          list_changed_files=$(git diff --diff-filter=d --name-only HEAD^ HEAD ':(exclude)*README.md' ':(exclude)*/templates/*' ':(exclude)*/user-data/*' ':(exclude)*/policies/*')
           declare -a matrix
-          for changed_directory in $list_changed_directories;
-          do
-            module_name=$(echo $changed_directory | sed -e "s/\//_/g")
-            matrix+="{\"module_name\": \"$module_name\", \"module_path\": \"$changed_directory\"},"
+          list_changed_directories=$(echo "$list_changed_files" | xargs -L1 dirname | sort -u | grep -Ev "^\." | grep -v "^packages/")
+          for dir in $list_changed_directories; do
+            if [ -f "$dir/Chart.yaml" ]; then
+              module_name=$(echo "$dir" | sed -e "s/\//_/g")
+              matrix+="{\"module_name\": \"$module_name\", \"module_path\": \"$dir\"},"
+            fi
           done
-          echo "matrix={\"include\":[$matrix]}" >> $GITHUB_OUTPUT
-          echo $matrix
+          if [ -z "$matrix" ]; then
+            echo "No valid Helm chart directories found with Chart.yaml"
+            echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+          else
+            echo "matrix={\"include\":[${matrix%,}]}" >> $GITHUB_OUTPUT
+          fi
+          echo "Matrix: ${matrix%,}"
 
   setup:
     runs-on: ubuntu-22.04
@@ -108,10 +113,7 @@ jobs:
       - name: 'Remove prefix from tag'
         id: previoustag-withoutprefix
         run: |
-          # Removing moduleName from the complete tag i.e acm-v1.2.3 => v1.2.3
           withoutTag=$(echo ${{ steps.previoustag.outputs.tag }} | sed -e "s/^${{ matrix.module_name }}-//")
-          
-          # Storing variable in Step Output
           echo "tag=$withoutTag" >> $GITHUB_OUTPUT
 
       - name: 'Generate next version'
@@ -189,21 +191,18 @@ jobs:
         id: moduleSha
         run: |
           pwd
-          module_sha=$(git log -1 --format="%H" -- ${{ matrix.module}})
+          module_sha=$(git log -1 --format="%H" -- ${{ matrix.module_path }})
           echo "sha=$module_sha" >> $GITHUB_OUTPUT
 
       - name: Create Tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Configure Github Actions Bot User
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Crete New Tag for Module
           git tag -a "${{ matrix.module_name }}-${{ fromJson(steps.read.outputs.result).new_tag[format('{0}', matrix.module_name )] }}" -m "Version ${{ fromJson(steps.read.outputs.result).new_tag[format('{0}', matrix.module_name )] }}" "${{ steps.moduleSha.outputs.sha }}"
           git push origin ${{ matrix.module_name }}-${{ fromJson(steps.read.outputs.result).new_tag[format('{0}', matrix.module_name )] }}
-  
+
   preview-helm-charts:
     needs:
       - generate-matrix
@@ -212,6 +211,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     if: github.event_name == 'pull_request'
+    name: "Preview Helm Chart Packaging"
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -226,24 +226,28 @@ jobs:
 
       - name: Preview Helm Chart packaging
         run: |
-          echo "📦 Generating preview Helm package for module: ${{ matrix.module_name }}"
+          echo "Generating preview Helm package for module: ${{ matrix.module_name }}"
           cd ${{ matrix.module_path }}
-          helm package . --destination ../packages
-          helm repo index ../packages --merge ../packages/index.yaml || helm repo index ../packages
+          helm package .
+
+          # Only merge this chart entry into index.yaml
+          helm repo index --merge ../packages/index.yaml .
+
+          mv ./${{ matrix.module_name }}-*.tgz index.yaml ../packages/
 
       - name: Commit and push preview package changes to PR branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          cd packages
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add packages/
           if [[ -n "$(git status --porcelain)" ]]; then
-            git commit -m "ci(preview): update Helm chart preview for ${{ matrix.module_name }}"
+            git add .
+            git commit -m "preview: update Helm chart for ${{ matrix.module_name }}"
             git push origin HEAD:${{ github.head_ref }}
           else
-            echo "✅ No chart changes to preview"
+            echo "No chart preview changes to commit"
           fi
 
 
@@ -251,11 +255,13 @@ jobs:
     needs:
       - create-tag
       - generate-matrix
+      - decide-tags
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-    if: github.event_name == 'pull_request_target' && needs.detect.outputs.is-merge-event == 'true'    
+    if: github.event_name == 'pull_request_target' && needs.detect.outputs.is-merge-event == 'true'
+    name: "Package Helm Charts"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -267,24 +273,40 @@ jobs:
         with:
           version: ${{ env.HELM_VERSION }}
 
-      - name: Package Helm Chart (Publish)
+      - uses: "cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a" # v1.0.0
+        id: read
+        with:
+          matrix-step-name: decide-tags
+
+      - name: Package Helm Chart and Update index.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo " Helm chart for module: ${{ matrix.module_name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          version="${{ fromJson(steps.read.outputs.result).new_tag[format('{0}', matrix.module_name )] }}"
+          version="${version#v}"  # Remove leading 'v' if present
+
+          echo "Packaging Helm chart for ${{ matrix.module_name }} at version $version"
           cd ${{ matrix.module_path }}
-          helm package . --destination ../packages
-          helm repo index ../packages --merge ../packages/index.yaml
+
+          helm package . --version "$version"
+
+          # Only merge this chart into index.yaml
+          helm repo index --merge ../packages/index.yaml .
+
+          mv ./${{ matrix.module_name }}-$version.tgz index.yaml ../packages/
 
       - name: Commit and push updated Helm packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd packages
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           if [[ -n "$(git status --porcelain)" ]]; then
             git add .
-            git commit -m " update Helm chart package for ${{ matrix.module_name }}"
+            git commit -m "${{ matrix.module_name }}: update package and index.yaml"
             git push
           else
             echo "No changes to commit in packages/"
