@@ -21,6 +21,16 @@ entries:
     urls:
     - apache-1.2.1.tgz
     version: 1.2.1
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2025-10-06T16:47:56.397199553Z"
+    description: A Helm chart for Kubernetes
+    digest: f57097389185770025995562a7528d964f4b594c42445b4f6721026cb2cdcf30
+    name: apache
+    type: application
+    urls:
+    - apache-0.2.0.tgz
+    version: 0.2.0
   myapp:
   - apiVersion: v2
     created: "2025-10-05T13:40:15.39677023Z"
@@ -176,4 +186,4 @@ entries:
     urls:
     - myapp-1.0.0.tgz
     version: 1.0.0
-generated: "2025-10-06T16:45:27.770788456Z"
+generated: "2025-10-06T16:47:56.396674794Z"
