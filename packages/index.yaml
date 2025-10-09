@@ -99,6 +99,20 @@ entries:
     - myapp-4.5.0.tgz
     version: 4.5.0
   - apiVersion: v2
+    created: "2025-10-09T07:22:55.823974347Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: 2327b657302a75adafebb17ea04900cf30ed6d98629ecedf87d0a7086d982dc8
+    name: myapp
+    urls:
+    - myapp-2.8.0.tgz
+    version: 2.8.0
+  - apiVersion: v2
     created: "2025-10-05T13:40:15.338039484Z"
     dependencies:
     - name: postgresql
@@ -224,7 +238,7 @@ entries:
       tanzuCategory: service
     apiVersion: v2
     appVersion: 17.5.0
-    created: "2025-10-06T16:50:03.58398725Z"
+    created: "2025-10-09T07:22:55.829794763Z"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -271,7 +285,7 @@ entries:
       tanzuCategory: service
     apiVersion: v2
     appVersion: 8.2.1
-    created: "2025-10-06T16:50:03.589663325Z"
+    created: "2025-10-09T07:22:55.836514557Z"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -297,4 +311,4 @@ entries:
     urls:
     - charts/redis-22.0.5.tgz
     version: 22.0.5
-generated: "2025-10-09T07:22:46.587569007Z"
+generated: "2025-10-09T07:22:55.8120773Z"
