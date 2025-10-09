@@ -18,7 +18,7 @@ type: application
 
 # incrementing this version number is important since it is how users will know whether they
 # have the latest and greatest version of your chart
-version: 2.5.1
+version: 2.6.1
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
