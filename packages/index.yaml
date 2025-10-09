@@ -3,6 +3,16 @@ entries:
   apache:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2025-10-09T09:54:07.333794577Z"
+    description: A Helm chart for Kubernetes
+    digest: 4d1752fcea4ec6bd0064d68d6a61501c94dd9e52d6078e8a90d34615944c55ad
+    name: apache
+    type: application
+    urls:
+    - apache-3.4.5.tgz
+    version: 3.4.5
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2025-10-09T07:39:58.358137571Z"
     description: A Helm chart for Kubernetes
     digest: af9f86ea45d1b411fba66f8fd35d416c48ec635e7764820241527e6e6e3ee532
@@ -335,4 +345,4 @@ entries:
     urls:
     - charts/redis-22.0.5.tgz
     version: 22.0.5
-generated: "2025-10-09T07:40:05.151464856Z"
+generated: "2025-10-09T09:54:07.333048343Z"
