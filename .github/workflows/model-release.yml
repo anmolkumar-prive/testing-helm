@@ -12,7 +12,6 @@ permissions:
   pull-requests: write
 
 env:
-  DEFAULT_MODULE_VERSION: "0.1.0"
   HELM_VERSION: 3.10.0
 
 jobs:
@@ -24,13 +23,18 @@ jobs:
       matrix: ${{ steps.changed-directories.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
       - name: Get changed Helm chart directories
         id: changed-directories
         run: |
-          list_changed_files=$(git diff --name-only origin/main...HEAD)
+          echo "Detecting changed Helm charts..."
+          if [ "${{ github.event_name }}" == "pull_request_target" ]; then
+            list_changed_files=$(git diff --name-only HEAD^1...HEAD)
+          else
+            list_changed_files=$(git diff --name-only origin/main...HEAD)
+          fi
           declare -a matrix
           for file in $list_changed_files; do
             dir=$(dirname "$file")
@@ -41,9 +45,74 @@ jobs:
           done
           if [ -z "$matrix" ]; then
             echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+            echo "No charts changed."
           else
             echo "matrix={\"include\":[${matrix%,}]}" >> $GITHUB_OUTPUT
+            echo "Changed chart directories detected."
           fi
+
+  comment-version-change:
+    name: Comment Helm Chart Version Change
+    needs: [generate-matrix]
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout PR branch (head)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Copy head chart.yaml files
+        run: |
+          mkdir -p head_charts
+          for module in $(echo '${{ needs.generate-matrix.outputs.matrix }}' | jq -r '.include[].module_path'); do
+            mkdir -p "head_charts/$module"
+            cp "$module/Chart.yaml" "head_charts/$module/"
+          done
+
+      - name: Checkout base branch (main)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          ref: main
+          path: main_branch
+
+      - name: Compare versions and build comment
+        id: build_comment
+        run: |
+          echo "# Helm Chart Version Changes" > prepare_comment.txt
+          echo "| Chart | Previous Version | New Version |" >> prepare_comment.txt
+          echo "|-------|------------------|-------------|" >> prepare_comment.txt
+
+          changed=$(echo '${{ needs.generate-matrix.outputs.matrix }}' | jq -c '.include[]')
+
+          any_change=false
+
+          for item in $(echo "$changed"); do
+            module_path=$(echo "$item" | jq -r '.module_path')
+            module_name=$(echo "$item" | jq -r '.module_name')
+
+            new_ver=$(grep '^version:' "head_charts/$module_path/Chart.yaml" | sed 's/version:[[:space:]]*//')
+            old_ver=$(grep '^version:' "main_branch/$module_path/Chart.yaml" | sed 's/version:[[:space:]]*//')
+
+            if [ "$new_ver" != "$old_ver" ]; then
+              echo "| $module_name | $old_ver | $new_ver |" >> prepare_comment.txt
+              any_change=true
+            fi
+          done
+
+          if [ "$any_change" = false ]; then
+            echo "No chart version changes detected."
+            echo "No chart version changes found." > prepare_comment.txt
+          fi
+
+      - name: Comment on PR
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.0
+        with:
+          file-path: prepare_comment.txt
+          comment-tag: helm_version_change
+          mode: recreate
 
   preview-helm-charts:
     needs: [generate-matrix]
@@ -51,98 +120,160 @@ jobs:
     if: github.event_name == 'pull_request'
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     name: Preview Helm Chart Packaging
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
 
       - name: Set up Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
         with:
           version: ${{ env.HELM_VERSION }}
 
       - name: Preview Helm Chart packaging
         run: |
+          mkdir -p ../packages
           cd ${{ matrix.module_path }}
+          echo "Packaging preview chart: ${{ matrix.module_name }}"
           helm package .
-          helm repo index --merge ../packages/index.yaml .
-          mv ./*.tgz index.yaml ../packages/
+          cd ..
+          if [ -f "packages/index.yaml" ]; then
+            helm repo index ${{ matrix.module_path }} --merge packages/index.yaml 
+          else
+            helm repo index ${{ matrix.module_path }} 
+          fi
+          mv ${{ matrix.module_path }}/*.tgz ${{ matrix.module_path }}/index.yaml packages/
+          echo "Contents of packages directory:"
+          ls -l packages/
 
       - name: Commit preview chart
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd packages
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [[ -n "$(git status --porcelain)" ]]; then
-            git add .
+          git add packages/
+          if ! git diff --cached --quiet; then
             git commit -m "Preview Helm chart for ${{ matrix.module_name }}"
             git push origin HEAD:${{ github.head_ref }}
+            echo "Preview package committed for ${{ matrix.module_name }}"
           else
-            echo "No changes"
+            echo "No preview changes to commit."
           fi
 
   package-helm-charts:
     needs: generate-matrix
     runs-on: ubuntu-22.04
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
     strategy:
+      fail-fast: false
+      max-parallel: 1
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+          ref: main
 
       - name: Set up Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
         with:
           version: ${{ env.HELM_VERSION }}
 
-      - name: Get version from Chart.yaml
+      - name: Extract version from Chart.yaml
         id: get_version
         run: |
-          version=$(grep '^version:' ${{ matrix.module_path }}/Chart.yaml | head -1 | sed 's/version:[[:space:]]*//')
+          version=$(grep '^version:' "${{ matrix.module_path }}/Chart.yaml" | head -1 | sed 's/version:[[:space:]]*//')
+          if [ -z "$version" ]; then
+            echo "ERROR: Version not found in Chart.yaml"
+            exit 1
+          fi
           echo "version=$version" >> $GITHUB_OUTPUT
 
-      - name: Create git tag from Chart version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Package Helm chart and update index
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          tag="${{ matrix.module_name }}-${{ steps.get_version.outputs.version }}"
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "Tag $tag already exists, skipping."
+          mkdir -p packages
+          cd "${{ matrix.module_path }}"
+          echo "Packaging final chart: ${{ matrix.module_name }}"
+          helm package . --version "${{ steps.get_version.outputs.version }}"
+          if [ -f "../packages/index.yaml" ]; then
+            helm repo index . --merge ../packages/index.yaml
           else
-            git tag -a "$tag" -m "Release $tag"
-            git push origin "$tag"
+            helm repo index .
           fi
-
-      - name: Package Helm chart
-        run: |
-          cd ${{ matrix.module_path }}
-          helm package . --version ${{ steps.get_version.outputs.version }}
-          helm repo index --merge ../packages/index.yaml .
           mv ./*.tgz index.yaml ../packages/
+          echo "Contents of packages directory:"
+          ls -l ../packages/
 
       - name: Commit and push packaged charts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd packages
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [[ -n "$(git status --porcelain)" ]]; then
-            git add .
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+
+          git add packages/
+          if ! git diff --cached --quiet; then
             git commit -m "Release ${{ matrix.module_name }} version ${{ steps.get_version.outputs.version }}"
-            git push
+            git push origin main
+            echo "Committed and pushed changes for ${{ matrix.module_name }}"
           else
-            echo "No changes to commit"
+            echo "No changes detected in packages/, skipping commit."
           fi
-          
+
+  tag-helm-charts:
+    name: Create Git Tag for Helm Chart
+    needs: [generate-matrix, package-helm-charts]
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          ref: main
+
+      - name: Pull latest main
+        run: git pull origin main
+
+      - name: Extract version from Chart.yaml
+        id: get_version
+        run: |
+          version=$(grep '^version:' "${{ matrix.module_path }}/Chart.yaml" | head -1 | sed 's/version:[[:space:]]*//')
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Get latest commit for module
+        id: get_commit_sha
+        run: |
+          sha=$(git log -1 --format="%H" -- "${{ matrix.module_path }}")
+          echo "sha=$sha" >> $GITHUB_OUTPUT
+
+      - name: Create and push Git tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+
+          TAG="${{ matrix.module_name }}-v${{ steps.get_version.outputs.version }}"
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists. Skipping."
+          else
+            git tag -a "$TAG" -m "Release $TAG" "${{ steps.get_commit_sha.outputs.sha }}"
+            git push origin "$TAG"
+            echo "Tag pushed: $TAG"
+          fi
