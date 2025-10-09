@@ -23,6 +23,16 @@ entries:
     version: 3.4.5
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2025-10-09T17:44:48.339602749Z"
+    description: A Helm chart for Kubernetes
+    digest: 0186fa4987cf33fc2a487914f2b91985cf3b2bf9634f29143058d276dc5be917
+    name: apache
+    type: application
+    urls:
+    - apache-3.4.1.tgz
+    version: 3.4.1
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2025-10-09T07:39:58.358137571Z"
     description: A Helm chart for Kubernetes
     digest: dd9ab8fff51d29dd8d76504401505f52a57a69a42792d7665c6234c4949e4a57
@@ -100,6 +110,20 @@ entries:
     urls:
     - myapp-5.4.3.tgz
     version: 5.4.3
+  - apiVersion: v2
+    created: "2025-10-09T17:44:56.905130652Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.24
+    - name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 22.0.5
+    digest: 3670be3ff844e57ea884d2012e16ad16fe739b2a7ec578bd4cbb116a487aaa6c
+    name: myapp
+    urls:
+    - myapp-5.4.1.tgz
+    version: 5.4.1
   - apiVersion: v2
     created: "2025-10-05T13:40:15.39677023Z"
     dependencies:
@@ -310,7 +334,7 @@ entries:
       tanzuCategory: service
     apiVersion: v2
     appVersion: 17.5.0
-    created: "2025-10-09T17:41:25.533201139Z"
+    created: "2025-10-09T17:44:56.911117985Z"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -357,7 +381,7 @@ entries:
       tanzuCategory: service
     apiVersion: v2
     appVersion: 8.2.1
-    created: "2025-10-09T17:41:25.540636803Z"
+    created: "2025-10-09T17:44:56.916875042Z"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -383,4 +407,4 @@ entries:
     urls:
     - charts/redis-22.0.5.tgz
     version: 22.0.5
-generated: "2025-10-09T17:41:25.515591065Z"
+generated: "2025-10-09T17:44:56.892627888Z"
