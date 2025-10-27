@@ -36,10 +36,13 @@ jobs:
             list_changed_files=$(git diff --name-only origin/main...HEAD)
           fi
 
+          declare -A seen_dirs
           matrix=""
+
           for file in $list_changed_files; do
             dir=$(dirname "$file")
-            if [ -f "$dir/Chart.yaml" ]; then
+            if [ -f "$dir/Chart.yaml" ] && [ -z "${seen_dirs[$dir]}" ]; then
+              seen_dirs[$dir]=1
               module_name=$(echo "$dir" | sed 's/\//_/g')
               matrix+="{\"module_name\": \"$module_name\", \"module_path\": \"$dir\"},"
             fi
@@ -50,7 +53,7 @@ jobs:
             echo "No charts changed."
           else
             echo "matrix={\"include\":[$(echo "$matrix" | sed 's/,$//')]}" >> $GITHUB_OUTPUT
-            echo "Changed chart directories detected."
+            echo "Changed chart directories detected (deduplicated)."
           fi
 
   comment-version-change:
